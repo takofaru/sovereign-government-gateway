@@ -9,11 +9,10 @@ const RPC_URL = "https://soroban-testnet.stellar.org";
 const server = new StellarSdk.rpc.Server(RPC_URL);
 
 /**
- * Submits a survey stage response to the Soroban contract.
+ * Submits a survey response to the Soroban contract.
  */
-export async function submitStage(
+export async function submitResponse(
   surveyId: number,
-  stageId: number,
   responseHash: string, // 32-byte hex string
   issuerSignature: string // 64-byte hex string (mock signature for proof-of-humanity)
 ) {
@@ -33,9 +32,8 @@ export async function submitStage(
   })
     .addOperation(
       contract.call(
-        "submit_stage_response",
+        "submit_response",
         StellarSdk.xdr.ScVal.scvU64(StellarSdk.xdr.Uint64.fromString(surveyId.toString())),
-        StellarSdk.xdr.ScVal.scvU32(stageId),
         StellarSdk.Address.fromString(publicKey).toScVal(),
         StellarSdk.xdr.ScVal.scvBytes(Buffer.from(responseHash, 'hex')),
         StellarSdk.xdr.ScVal.scvBytes(Buffer.from(issuerSignature, 'hex'))

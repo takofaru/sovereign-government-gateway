@@ -1,53 +1,87 @@
 import { useState } from 'react';
-import SurveyStage from './SurveyStage';
+import VerificationView from './VerificationView';
+import DashboardView from './DashboardView';
+import SurveyView from './SurveyView';
 import './App.css';
 
-const SURVEYS = [
-  {
-    id: 1,
-    stages: [
-      { id: 1, topic: "User Experience Foundations", questions: ["How often do you use dApps?", "What is your primary wallet?"] },
-      { id: 2, topic: "Security Awareness", questions: ["Do you use hardware wallets?", "How do you store your seed phrases?"] },
-      { id: 3, topic: "Future Expectations", questions: ["What feature is missing in Stellar?", "Rate your interest in Soroban (1-10)"] },
-    ]
+const MOCK_SURVEYS = [
+  { 
+    id: 1, 
+    title: "Eco-Product Feedback", 
+    description: "Help us refine our sustainable product line with verified real user feedback.",
+    questions: ["Which eco-friendly feature is most important to you?", "How likely are you to recommend our products?"]
+  },
+  { 
+    id: 2, 
+    title: "Governance Proposal #14", 
+    description: "Official vote for the decentralized protocol treasury allocation.",
+    questions: ["Should we allocate 10% of fees to the developer fund?", "Which project should receive the next ecosystem grant?"]
+  },
+  { 
+    id: 3, 
+    title: "Digital Nomad Lifestyle", 
+    description: "A research survey on remote work trends for verified humans only.",
+    questions: ["How many countries have you worked from in the last 12 months?", "What is your biggest challenge while working remotely?"]
   }
 ];
 
+type AppState = 'verification' | 'dashboard' | 'survey';
+
 function App() {
-  const [currentStageIdx, setCurrentStageIdx] = useState(0);
-  const survey = SURVEYS[0];
-  const allStagesCompleted = currentStageIdx >= survey.stages.length;
+  const [appState, setAppState] = useState<AppState>('verification');
+  const [issuerSignature, setIssuerSignature] = useState<string | null>(null);
+  const [selectedSurveyId, setSelectedSurveyId] = useState<number | null>(null);
+
+  const handleVerify = (signature: string) => {
+    setIssuerSignature(signature);
+    setAppState('dashboard');
+  };
+
+  const handleSelectSurvey = (id: number) => {
+    setSelectedSurveyId(id);
+    setAppState('survey');
+  };
+
+  const selectedSurvey = MOCK_SURVEYS.find(s => s.id === selectedSurveyId);
 
   return (
-    <div className="App" style={{ maxWidth: '600px', margin: '0 auto', padding: '40px' }}>
-      <header>
-        <h1>Stellar Privacy Survey</h1>
-        <p>A multi-stage, fragmented survey application powered by <b>Soroban</b>.</p>
-      </header>
-
-      {!allStagesCompleted ? (
-        <>
-          <div style={{ marginBottom: '20px', background: '#f8f9fa', padding: '10px', borderRadius: '4px' }}>
-            <strong>Progress:</strong> Stage {currentStageIdx + 1} of {survey.stages.length}
-            <div style={{ width: '100%', background: '#eee', height: '10px', borderRadius: '5px', marginTop: '5px' }}>
-              <div style={{ width: `${((currentStageIdx + 1) / survey.stages.length) * 100}%`, background: '#28a745', height: '100%', borderRadius: '5px' }}></div>
+    <div className="App" style={{ minHeight: '100vh', padding: '20px', background: '#f8f9fa' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ margin: '0', color: '#333' }}>Stellar VerifySurvey</h1>
+          <p style={{ color: '#666' }}>Secure, Private, and Verified Human Feedback</p>
+          {issuerSignature && (
+            <div style={{ display: 'inline-block', marginTop: '10px', padding: '4px 12px', background: '#d4edda', color: '#155724', borderRadius: '20px', fontSize: '12px' }}>
+              ✓ Verified Real Person
             </div>
-          </div>
+          )}
+        </header>
 
-          <SurveyStage 
-            surveyId={survey.id}
-            stageId={survey.stages[currentStageIdx].id}
-            topic={survey.stages[currentStageIdx].topic}
-            questions={survey.stages[currentStageIdx].questions}
-            onComplete={() => setCurrentStageIdx(currentStageIdx + 1)}
-          />
-        </>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '40px', background: '#e9ecef', borderRadius: '8px' }}>
-          <h2>Survey Complete! 🎉</h2>
-          <p>Thank you for your responses. Every stage has been independently verified on the Stellar network.</p>
-        </div>
-      )}
+        <main>
+          {appState === 'verification' && (
+            <VerificationView onVerify={handleVerify} />
+          )}
+
+          {appState === 'dashboard' && (
+            <DashboardView surveys={MOCK_SURVEYS} onSelect={handleSelectSurvey} />
+          )}
+
+          {appState === 'survey' && selectedSurvey && issuerSignature && (
+            <SurveyView 
+              surveyId={selectedSurvey.id}
+              title={selectedSurvey.title}
+              questions={selectedSurvey.questions}
+              issuerSignature={issuerSignature}
+              onComplete={() => setAppState('dashboard')}
+              onCancel={() => setAppState('dashboard')}
+            />
+          )}
+        </main>
+
+        <footer style={{ marginTop: '60px', textAlign: 'center', fontSize: '12px', color: '#999', borderTop: '1px solid #ddd', padding: '20px' }}>
+          Powered by Soroban Smart Contracts. All PII stays local. Only encrypted proofs on-chain.
+        </footer>
+      </div>
     </div>
   );
 }

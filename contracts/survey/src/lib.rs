@@ -7,12 +7,11 @@ use soroban_sdk::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SurveyInfo {
     pub owner: Address,
-    pub total_stages: u32,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StageSubmission {
+pub struct SurveySubmission {
     pub response_hash: BytesN<32>,
     pub timestamp: u64,
 }
@@ -22,7 +21,7 @@ pub enum DataKey {
     Admin,
     TrustedIssuer,
     Survey(u64),
-    Submission(u64, u32, Address),
+    Submission(u64, Address),
 }
 
 #[contract]
@@ -39,56 +38,53 @@ impl SurveyContract {
         env.storage().instance().set(&DataKey::TrustedIssuer, &trusted_issuer);
     }
 
-    /// Registers a new survey instance with a specific number of stages
-    pub fn create_survey(env: Env, survey_id: u64, owner: Address, total_stages: u32) {
+    /// Registers a new survey instance
+    pub fn create_survey(env: Env, survey_id: u64, owner: Address) {
         owner.require_auth();
         if env.storage().instance().has(&DataKey::Survey(survey_id)) {
             panic!("Survey already exists");
         }
-        let info = SurveyInfo { owner, total_stages };
+        let info = SurveyInfo { owner };
         env.storage().instance().set(&DataKey::Survey(survey_id), &info);
     }
 
-    /// Accepts a cryptographic hash of an off-chain survey response for a specific stage
-    pub fn submit_stage_response(
+    /// Accepts a cryptographic hash of an off-chain survey response and verifies humanity
+    pub fn submit_response(
         env: Env,
         survey_id: u64,
-        stage_id: u32,
         user: Address,
         response_hash: BytesN<32>,
         _issuer_signature: BytesN<64>, // Mock for Proof of Humanity verification
     ) {
         user.require_auth();
 
-        // 1. Verify survey exists and stage is valid
+        // 1. Verify survey exists
         let survey_key = DataKey::Survey(survey_id);
-        let survey_info: SurveyInfo = env.storage().instance().get(&survey_key).expect("Survey not found");
-        
-        if stage_id == 0 || stage_id > survey_info.total_stages {
-            panic!("Invalid stage ID");
+        if !env.storage().instance().has(&survey_key) {
+            panic!("Survey not found");
         }
 
         // 2. Verify humanity (Simplified mock)
         // In a real scenario, we would use env.crypto().ed25519_verify(...)
-        // to check if the TrustedIssuer signed the user's address confirmig humanity.
+        // to check if the TrustedIssuer signed the user's address confirming humanity.
 
-        // 3. Check for duplicate stage submission
-        let submission_key = DataKey::Submission(survey_id, stage_id, user.clone());
+        // 3. Check for double submission for this survey
+        let submission_key = DataKey::Submission(survey_id, user.clone());
         if env.storage().persistent().has(&submission_key) {
-            panic!("Stage already submitted");
+            panic!("Survey already submitted by this user");
         }
 
         // 4. Record submission
-        let submission = StageSubmission {
+        let submission = SurveySubmission {
             response_hash,
             timestamp: env.ledger().timestamp(),
         };
         env.storage().persistent().set(&submission_key, &submission);
     }
 
-    /// Returns submission details for a specific stage and user
-    pub fn get_submission(env: Env, survey_id: u64, stage_id: u32, user: Address) -> StageSubmission {
-        let submission_key = DataKey::Submission(survey_id, stage_id, user);
+    /// Returns submission details for a specific user
+    pub fn get_submission(env: Env, survey_id: u64, user: Address) -> SurveySubmission {
+        let submission_key = DataKey::Submission(survey_id, user);
         env.storage().persistent().get(&submission_key).expect("Submission not found")
     }
     
