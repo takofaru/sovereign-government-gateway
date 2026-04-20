@@ -1,118 +1,73 @@
-# Stellar Notes DApp
+# Stellar VerifySurvey DApp
 
-**Stellar Notes DApp** - Blockchain-Based Decentralized Note-Taking System
+**Stellar VerifySurvey DApp** - Secure, Private, and Verified Human Feedback.
 
 ## Project Description
 
-Stellar Notes DApp is a decentralized smart contract solution built on the Stellar blockchain using Soroban SDK. It provides a secure, immutable platform for managing personal notes directly on the blockchain. The contract ensures that your data is stored transparently and is only manageable through predefined smart contract functions, eliminating reliance on centralized database providers.
+Stellar VerifySurvey is a decentralized survey application built on the **Stellar** blockchain using **Soroban smart contracts**. It solves the dual challenge of ensuring that every respondent is a "real person" (Proof of Humanity) while maintaining 100% data privacy for the user. 
 
-The system allows users to create, view, and delete notes, leveraging the efficiency and security of the Stellar network. Each note is uniquely identified and stored within the contract's instance storage, ensuring data persistence and reliability.
-
-## Project Vision
-
-Our vision is to revolutionize personal productivity in the digital age by:
-
-- **Decentralizing Data**: Moving note-taking from centralized servers to a global, distributed blockchain
-- **Ensuring Ownership**: Empowering users to have complete control and ownership over their digital thoughts and information
-- **Guaranteeing Immutability**: Providing a permanent, tamper-proof record of notes that cannot be altered or deleted by third parties
-- **Enhancing Privacy**: Leveraging blockchain security to protect personal information from unauthorized access
-- **Building Trustless Systems**: Creating a platform where data integrity is guaranteed by code, not by company promises
-
-We envision a future where digital information is truly personal and sovereign, empowering individuals with complete autonomy over their digital assets.
+By requiring a Government ID verification step (simulated) before access, the application ensures high-integrity survey results for organizations, while utilizing client-side AES encryption so that sensitive personal data never touches the blockchain or any server in plaintext.
 
 ## Key Features
 
-### 1. **Simple Note Creation**
+### 1. **Government ID Identity Verification**
+- Users must complete a "Proof of Humanity" step using a Government ID.
+- Generates a cryptographic signature from a trusted issuer.
+- Only verified real people can access and submit surveys.
 
-- Create notes with just one function call
-- Specify title and content for each note
-- Automated ID generation for unique identification
-- Persistent storage on the Stellar blockchain
+### 2. **Survey Dashboard**
+- A centralized hub to discover and participate in multiple active surveys.
+- Covers diverse topics from corporate feedback to decentralized governance voting.
+- Tracks and displays the user's "Verified Human" status.
 
-### 2. **Efficient Data Retrieval**
+### 3. **Privacy-First Architecture**
+- **Client-Side Encryption:** All survey responses are encrypted using AES-256 in the browser before submission.
+- **On-Chain Proofs:** Only the cryptographic hash of the encrypted data is stored on the Soroban blockchain.
+- **No PII On-Chain:** Personally Identifiable Information (PII) never touches the ledger, ensuring compliance and security.
 
-- Fetch all stored notes in a single call
-- Structured data representation for easy frontend integration
-- Quick access to your entire note collection
-- Real-time synchronization with the blockchain state
+### 4. **Soroban Smart Contract Integrity**
+- Prevents double-submissions for the same survey.
+- Verifies the issuer's signature to confirm the respondent's humanity.
+- Provides a permanent, timestamped record of the survey's validity.
 
-### 3. **Secure Deletion**
+## System Architecture
 
-- Remove specific notes using their unique IDs
-- Permanent removal from the contract storage
-- Clean and efficient storage management
-- Immediate update of the note list after deletion
-
-### 4. **Transparency and Security**
-
-- View all note activities on the blockchain
-- Blockchain-based verification of all storage actions
-- Immutable records of note creation and deletion
-- Protected against unauthorized modifications
-
-### 5. **Stellar Network Integration**
-
-- Leverages the high speed and low cost of Stellar
-- Built using the modern Soroban Smart Contract SDK
-- Scalable architecture for growing note collections
-- Interoperable with other Stellar-based services
-
-## Contract Details
-
-- Contract Address: CBLU4IUASQ4WUMOXBFLZRSBBLILGOH33GS4LUPKFBCCCMJCDQNMF7G2M
-  ![alt text](screenshot.png)
-
-## Future Scope
-
-### Short-Term Enhancements
-
-1. **Note Encryption**: Support for end-to-end encryption of note content for enhanced privacy
-2. **Category Management**: Add tags and categories to organize notes efficiently
-3. **Rich Text Support**: Extend support beyond plain text to include Markdown and formatted content
-4. **Search Functionality**: Implement advanced search filters for large note collections
-
-### Medium-Term Development
-
-5. **Collaborative Notes**: Implement multi-signature requirements for shared or collaborative note-taking
-   - Shared access for multiple addresses
-   - Permission-based editing and viewing
-   - Version history tracking
-6. **Notification System**: Off-chain bridge to alert users of new updates or shared notes
-7. **Asset Attachment**: Capability to attach digital assets or tokens to specific notes
-8. **Inter-Contract Integration**: Allow other smart contracts to interact with and store data in the notes contract
-
-### Long-Term Vision
-
-9. **Cross-Chain Synchronization**: Extend note storage to multiple blockchain networks
-10. **Decentralized UI Hosting**: Host the frontend on IPFS or similar decentralized platforms
-11. **AI-Powered Summarization**: Optional integration with AI to help users summarize their notes
-12. **Privacy Layers**: Implement zero-knowledge proofs for completely private note content
-13. **DAO Governance**: Community-driven protocol improvements and feature prioritization
-14. **Identity Management**: Integration with decentralized identity (DID) systems for user management
-
-### Enterprise Features
-
-15. **Corporate Documentation**: Adapt the system for secure corporate record-keeping
-16. **Immutable Logging**: Create time-locked logs for audit purposes
-17. **Automated Reporting**: Automatic note triggers for periodic reporting
-18. **Multi-Language Support**: Expand accessibility with internationalization
-
----
+1.  **Identity Verification:** The user uploads a Gov ID (processed locally). A trusted issuer provides a signature confirming the user is a unique human.
+2.  **Dashboard:** The user browses available surveys.
+3.  **Encrypted Submission:** Upon completion, the frontend encrypts the response, hashes the ciphertext, and submits the hash + humanity proof to the Soroban contract.
+4.  **Verification:** The smart contract validates the transaction, ensuring the user is verified and hasn't voted before.
 
 ## Technical Requirements
 
-- Soroban SDK
-- Rust programming language
-- Stellar blockchain network
+- **Soroban SDK:** For smart contract development.
+- **Rust:** The primary programming language for the contract.
+- **Node.js & npm:** For the React/TypeScript frontend.
+- **Freighter Wallet:** To sign transactions on the Stellar Testnet.
 
 ## Getting Started
 
-Deploy the smart contract to Stellar's Soroban network and interact with it using the three main functions:
+### 1. Smart Contract
+Navigate to the contract directory to build and test:
+```bash
+cd contracts/survey
+cargo test
+stellar contract build
+```
 
-- `create_note()` - Create a new note with a title and content
-- `get_notes()` - Retrieve all stored notes from the contract
-- `delete_note()` - Remove a specific note by its ID
+### 2. Frontend
+Install dependencies and start the development server:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*Note: Ensure your Freighter wallet is set to the Stellar Testnet.*
+
+## Security & Compliance Strategy
+
+- **GDPR/CCPA Compliance:** The architecture inherently supports the "Right to Erasure." Since only hashes are on-chain, deleting the off-chain encrypted data or the decryption keys effectively "deletes" the personal information from the system.
+- **Decoupled Identity:** By using specialized Identity Providers (IdPs) for the Gov ID check, the dApp itself never needs to store or manage sensitive government documents.
 
 ---
 
-**Stellar Notes DApp** - Securing Your Thoughts on the Blockchain
+**Stellar VerifySurvey DApp** - Powering High-Integrity Research on the Blockchain.
