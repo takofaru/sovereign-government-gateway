@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
-import { submitResponse } from './contract';
+import { submitResponse, getReputation } from './contract';
+import { getAddress } from '@stellar/freighter-api';
 
 interface SurveyViewProps {
   surveyId: number;
@@ -15,6 +16,27 @@ interface SurveyViewProps {
 const SurveyView = ({ surveyId, title, questions, issuerSignature, isSimulation, onComplete, onCancel }: SurveyViewProps) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reputation, setReputation] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function fetchReputation() {
+      try {
+        const { address } = await getAddress();
+        if (address) {
+          if (isSimulation) {
+            // Mock reputation for simulation mode
+            setReputation(Math.floor(Math.random() * 5));
+          } else {
+            const rep = await getReputation(address);
+            setReputation(rep);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user address/reputation", err);
+      }
+    }
+    fetchReputation();
+  }, [isSimulation]);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -48,13 +70,32 @@ const SurveyView = ({ surveyId, title, questions, issuerSignature, isSimulation,
 
   return (
     <div style={{ padding: '30px', background: '#fff', borderRadius: '8px', border: '1px solid #ddd' }}>
-      <button 
-        onClick={onCancel} 
-        style={{ float: 'right', background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}
-      >
-        ✕ Close
-      </button>
-      <h2 style={{ color: '#333' }}>{title}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ color: '#333', margin: 0 }}>{title}</h2>
+          {reputation !== null && (
+            <div style={{ 
+              marginTop: '10px', 
+              display: 'inline-block', 
+              padding: '4px 12px', 
+              background: '#007bff', 
+              color: '#fff', 
+              borderRadius: '20px', 
+              fontSize: '13px',
+              fontWeight: 'bold'
+            }}>
+              Reputation Status: {reputation}
+            </div>
+          )}
+        </div>
+        <button 
+          onClick={onCancel} 
+          style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '20px' }}
+        >
+          ✕
+        </button>
+      </div>
+
       <p style={{ color: '#666', marginBottom: '30px' }}>Your responses are encrypted locally and linked to your verified identity proof on-chain.</p>
       
       {isSimulation && (

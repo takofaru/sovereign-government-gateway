@@ -7,6 +7,7 @@ use soroban_sdk::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SurveyInfo {
     pub owner: Address,
+    pub min_reputation: u32,
 }
 
 #[contracttype]
@@ -22,6 +23,7 @@ pub enum DataKey {
     TrustedIssuer,
     Survey(u64),
     Submission(u64, Address),
+    Reputation(Address),
 }
 
 #[contract]
@@ -39,12 +41,12 @@ impl SurveyContract {
     }
 
     /// Registers a new survey instance
-    pub fn create_survey(env: Env, survey_id: u64, owner: Address) {
+    pub fn create_survey(env: Env, survey_id: u64, owner: Address, min_reputation: u32) {
         owner.require_auth();
         if env.storage().instance().has(&DataKey::Survey(survey_id)) {
             panic!("Survey already exists");
         }
-        let info = SurveyInfo { owner };
+        let info = SurveyInfo { owner, min_reputation };
         env.storage().instance().set(&DataKey::Survey(survey_id), &info);
     }
 
@@ -58,10 +60,13 @@ impl SurveyContract {
     ) {
         user.require_auth();
 
-        // 1. Verify survey exists
+        // 1. Verify survey exists and user meets reputation threshold
         let survey_key = DataKey::Survey(survey_id);
-        if !env.storage().instance().has(&survey_key) {
-            panic!("Survey not found");
+        let survey_info: SurveyInfo = env.storage().instance().get(&survey_key).expect("Survey not found");
+        
+        let user_rep = Self::get_reputation(env.clone(), user.clone());
+        if user_rep < survey_info.min_reputation {
+            panic!("Insufficient reputation");
         }
 
         // 2. Verify humanity (Simplified mock)
@@ -80,6 +85,22 @@ impl SurveyContract {
             timestamp: env.ledger().timestamp(),
         };
         env.storage().persistent().set(&submission_key, &submission);
+
+        // 5. Reward user with reputation
+        Self::reward_user(&env, &user);
+    }
+
+    /// Increments user reputation
+    fn reward_user(env: &Env, user: &Address) {
+        let key = DataKey::Reputation(user.clone());
+        let current_rep: u32 = env.storage().persistent().get(&key).unwrap_or(0);
+        env.storage().persistent().set(&key, &(current_rep + 1));
+    }
+
+    /// Returns user's reputation score
+    pub fn get_reputation(env: Env, user: Address) -> u32 {
+        let key = DataKey::Reputation(user);
+        env.storage().persistent().get(&key).unwrap_or(0)
     }
 
     /// Returns submission details for a specific user

@@ -59,6 +59,35 @@ export async function submitResponse(
 }
 
 /**
+ * Fetches user reputation score from the contract.
+ */
+export async function getReputation(publicKey: string): Promise<number> {
+  try {
+    const netDetails = await getNetworkDetails();
+    const RPC_URL = netDetails.sorobanRpcUrl || "https://soroban-testnet.stellar.org";
+    const server = new StellarSdk.rpc.Server(RPC_URL);
+
+    const contract = new StellarSdk.Contract(CONTRACT_ID);
+    const tx = new StellarSdk.TransactionBuilder(
+      new StellarSdk.Account("GDBU6UCOOT6RRYA6J4W5J37TCO5I5V5COVDR3LIPYUC37WSXSTCHVAYE", "0"),
+      { fee: "0", networkPassphrase: NETWORK_PASSPHRASE }
+    )
+      .addOperation(contract.call("get_reputation", StellarSdk.Address.fromString(publicKey).toScVal()))
+      .build();
+
+    const simulation = await server.simulateTransaction(tx);
+    if (StellarSdk.rpc.Api.isSimulationSuccess(simulation) && simulation.result) {
+      const val = simulation.result.retval;
+      return val.u32();
+    }
+    return 0;
+  } catch (err) {
+    console.warn("Failed to fetch reputation from contract, defaulting to 0", err);
+    return 0;
+  }
+}
+
+/**
  * Fetches survey metadata from the contract.
  */
 export async function getSurveyInfo(surveyId: number) {
