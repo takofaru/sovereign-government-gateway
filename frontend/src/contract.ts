@@ -1,12 +1,9 @@
 import * as StellarSdk from 'stellar-sdk';
-import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
+import { isConnected, getAddress, signTransaction, getNetworkDetails } from '@stellar/freighter-api';
 import { Buffer } from 'buffer';
 
-const CONTRACT_ID = "CCB..."; // Replace with deployed contract ID
+const CONTRACT_ID = "CCB..."; // Placeholder - Needs actual deployed address
 const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
-const RPC_URL = "https://soroban-testnet.stellar.org";
-
-const server = new StellarSdk.rpc.Server(RPC_URL);
 
 /**
  * Submits a survey response to the Soroban contract.
@@ -14,20 +11,31 @@ const server = new StellarSdk.rpc.Server(RPC_URL);
 export async function submitResponse(
   surveyId: number,
   responseHash: string, // 32-byte hex string
-  issuerSignature: string // 64-byte hex string (mock signature for proof-of-humanity)
+  issuerSignature: string // 64-byte hex string
 ) {
-  if (!(await isConnected())) {
-    throw new Error("Freighter not connected");
+  const connected = await isConnected();
+  if (!connected || !connected.isConnected) {
+    throw new Error("Freighter not connected. Please check your extension.");
   }
 
-  const { address: publicKey } = await getAddress();
-  if (!publicKey) throw new Error("Could not get public key");
+  const netDetails = await getNetworkDetails();
+  if (netDetails.network !== "TESTNET") {
+    throw new Error(`Wallet is on ${netDetails.network}, but this app requires TESTNET.`);
+  }
+
+  const addressObj = await getAddress();
+  const publicKey = addressObj.address;
+  if (!publicKey) throw new Error("Could not retrieve wallet address.");
+
+  // Dynamically fetch RPC URL from Freighter if available, else default to testnet
+  const RPC_URL = netDetails.sorobanRpcUrl || "https://soroban-testnet.stellar.org";
+  const server = new StellarSdk.rpc.Server(RPC_URL);
 
   const userAccount = await server.getAccount(publicKey);
 
   const contract = new StellarSdk.Contract(CONTRACT_ID);
   const tx = new StellarSdk.TransactionBuilder(userAccount, {
-    fee: "100",
+    fee: "1000", // Increased fee for Soroban
     networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
@@ -54,6 +62,10 @@ export async function submitResponse(
  * Fetches survey metadata from the contract.
  */
 export async function getSurveyInfo(surveyId: number) {
+  const netDetails = await getNetworkDetails();
+  const RPC_URL = netDetails.sorobanRpcUrl || "https://soroban-testnet.stellar.org";
+  const server = new StellarSdk.rpc.Server(RPC_URL);
+
   const contract = new StellarSdk.Contract(CONTRACT_ID);
   const tx = new StellarSdk.TransactionBuilder(
     new StellarSdk.Account("GDBU6UCOOT6RRYA6J4W5J37TCO5I5V5COVDR3LIPYUC37WSXSTCHVAYE", "0"),

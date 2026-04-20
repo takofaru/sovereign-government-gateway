@@ -7,11 +7,12 @@ interface SurveyViewProps {
   title: string;
   questions: string[];
   issuerSignature: string;
+  isSimulation: boolean;
   onComplete: () => void;
   onCancel: () => void;
 }
 
-const SurveyView = ({ surveyId, title, questions, issuerSignature, onComplete, onCancel }: SurveyViewProps) => {
+const SurveyView = ({ surveyId, title, questions, issuerSignature, isSimulation, onComplete, onCancel }: SurveyViewProps) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,14 +27,20 @@ const SurveyView = ({ surveyId, title, questions, issuerSignature, onComplete, o
       // 2. Hash for Stellar
       const hash = CryptoJS.SHA256(encrypted).toString();
 
-      // 3. Submit to Soroban Contract with the humanity proof (issuerSignature)
-      await submitResponse(surveyId, hash, issuerSignature);
+      if (isSimulation) {
+        // Simulate contract delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log("SIMULATED SUBMISSION:", { surveyId, hash, issuerSignature });
+      } else {
+        // 3. Submit to Soroban Contract
+        await submitResponse(surveyId, hash, issuerSignature);
+      }
 
-      alert(`Survey "${title}" submitted successfully using your verified identity!`);
+      alert(`Survey "${title}" submitted successfully! ${isSimulation ? '(SIMULATED)' : ''}`);
       onComplete();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Submission failed. Ensure you have Freighter connected to Testnet.");
+      alert(`Submission failed: ${err.message || 'Unknown error'}. Please ensure your Freighter is set to TESTNET and has XLM for fees.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -50,6 +57,12 @@ const SurveyView = ({ surveyId, title, questions, issuerSignature, onComplete, o
       <h2 style={{ color: '#333' }}>{title}</h2>
       <p style={{ color: '#666', marginBottom: '30px' }}>Your responses are encrypted locally and linked to your verified identity proof on-chain.</p>
       
+      {isSimulation && (
+        <div style={{ padding: '10px', background: '#fff3cd', color: '#856404', borderRadius: '4px', marginBottom: '20px', fontSize: '13px', border: '1px solid #ffeeba' }}>
+          <b>Simulation Mode:</b> Submissions will be logged to the console but not sent to the blockchain. Use this to test the UI flow without a deployed contract.
+        </div>
+      )}
+
       {questions.map((q, i) => (
         <div key={i} style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>{q}</label>

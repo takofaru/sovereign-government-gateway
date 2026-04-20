@@ -7,7 +7,8 @@ A privacy-first, decentralized survey application on the **Stellar** blockchain.
 - **Identity Verification:** Users must verify their identity using a Government ID before accessing any surveys.
 - **Survey Dashboard:** A central hub showing multiple active surveys.
 - **On-Chain Proofs:** Each survey submission is recorded on the **Soroban** blockchain as a cryptographic hash linked to a verified identity proof.
-- **Client-Side Privacy:** Survey responses are encrypted using AES-256 before being submitted, ensuring only the intended recipient can read them.
+- **Client-Side Privacy:** Survey responses are encrypted using AES-256 before being submitted.
+- **Simulation Mode:** A toggle in the frontend header allows testing the full UI flow without requiring a live Soroban contract deployment.
 
 ## Architecture
 - **Smart Contract (`contracts/survey/`):** Soroban contract that handles survey registration, humanity-verified submissions, and prevents double-voting.
@@ -19,7 +20,8 @@ A privacy-first, decentralized survey application on the **Stellar** blockchain.
 ```bash
 cd contracts/survey
 cargo test # Run logic tests
-stellar contract build # Build WASM
+# Deployment requires stellar-cli:
+# stellar contract deploy --wasm target/wasm32-unknown-unknown/release/survey.wasm --source <ACCOUNT> --network testnet
 ```
 
 ### Frontend
@@ -31,4 +33,4 @@ npm run dev # Start local development server
 
 ## Security & Compliance
 - **Data Privacy:** No PII is stored on-chain. Only cryptographic hashes and identity proofs.
-- **GDPR/CCPA:** The architecture supports the "Right to Erasure" as off-chain data (encrypted payloads) can be deleted, rendering on-chain hashes useless.
+- **GDPR/CCPA:** The architecture supports the "Right to Erasure" as off-chain data can be deleted, rendering on-chain hashes useless.
