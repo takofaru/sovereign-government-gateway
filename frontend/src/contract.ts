@@ -1,11 +1,12 @@
 import * as StellarSdk from 'stellar-sdk';
-import { isConnected, getPublicKey, signTransaction } from '@stellar/freighter-api';
+import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
+import { Buffer } from 'buffer';
 
 const CONTRACT_ID = "CCB..."; // Replace with deployed contract ID
 const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
 const RPC_URL = "https://soroban-testnet.stellar.org";
 
-const server = new StellarSdk.SorobanRpc.Server(RPC_URL);
+const server = new StellarSdk.rpc.Server(RPC_URL);
 
 /**
  * Submits a survey stage response to the Soroban contract.
@@ -20,13 +21,11 @@ export async function submitStage(
     throw new Error("Freighter not connected");
   }
 
-  const publicKey = await getPublicKey();
+  const { address: publicKey } = await getAddress();
   if (!publicKey) throw new Error("Could not get public key");
 
-  const userAccount = await server.getLatestLedger().then(() => server.getAccount(publicKey));
+  const userAccount = await server.getAccount(publicKey);
 
-  // Prepare arguments for Soroban contract call
-  // submit_stage_response(survey_id: u64, stage_id: u32, user: Address, response_hash: BytesN<32>, issuer_signature: BytesN<64>)
   const contract = new StellarSdk.Contract(CONTRACT_ID);
   const tx = new StellarSdk.TransactionBuilder(userAccount, {
     fee: "100",
@@ -45,8 +44,10 @@ export async function submitStage(
     .setTimeout(30)
     .build();
 
-  const signedTx = await signTransaction(tx.toXDR(), { network: 'TESTNET' });
-  const result = await server.sendTransaction(new StellarSdk.Transaction(signedTx, NETWORK_PASSPHRASE));
+  const signResult = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+  const signedTxXdr = (signResult as any).signedTxXdr || signResult;
+  
+  const result = await server.sendTransaction(StellarSdk.TransactionBuilder.fromXDR(signedTxXdr, NETWORK_PASSPHRASE) as StellarSdk.Transaction);
   
   return result;
 }
@@ -57,13 +58,12 @@ export async function submitStage(
 export async function getSurveyInfo(surveyId: number) {
   const contract = new StellarSdk.Contract(CONTRACT_ID);
   const tx = new StellarSdk.TransactionBuilder(
-    new StellarSdk.Account("G...", "0"), // Dummy account for read-only simulation
+    new StellarSdk.Account("GDBU6UCOOT6RRYA6J4W5J37TCO5I5V5COVDR3LIPYUC37WSXSTCHVAYE", "0"),
     { fee: "0", networkPassphrase: NETWORK_PASSPHRASE }
   )
     .addOperation(contract.call("get_survey_info", StellarSdk.xdr.ScVal.scvU64(StellarSdk.xdr.Uint64.fromString(surveyId.toString()))))
     .build();
 
   const result = await server.simulateTransaction(tx);
-  // Parse simulation result...
   return result;
 }

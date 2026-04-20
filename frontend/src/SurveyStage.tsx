@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import CryptoJS from 'crypto-js';
 import { submitStage } from './contract';
 
@@ -10,7 +10,7 @@ interface SurveyStageProps {
   onComplete: () => void;
 }
 
-const SurveyStage: React.FC<SurveyStageProps> = ({ surveyId, stageId, topic, questions, onComplete }) => {
+const SurveyStage = ({ surveyId, stageId, topic, questions, onComplete }: SurveyStageProps) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
